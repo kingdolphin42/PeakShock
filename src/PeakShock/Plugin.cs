@@ -36,6 +36,9 @@ namespace PeakShock
         internal static ConfigEntry<bool> EnablePoisonShock { get; private set; } = null!;
         internal static ConfigEntry<bool> EnableColdShock { get; private set; } = null!;
         internal static ConfigEntry<bool> EnableHotShock { get; private set; } = null!;
+        internal static ConfigEntry<bool> EnableSporesShock { get; private set; } = null!;
+        internal static ConfigEntry<bool> EnableWebShock { get; private set; } = null!;
+        internal static ConfigEntry<bool> EnableThornsShock { get; private set; } = null!;
         internal static ConfigEntry<float> ShockCooldownSeconds { get; private set; } = null!;
         public enum ShockProvider { PiShock, OpenShock }
         internal static ConfigEntry<ShockProvider> ShockProviderType { get; private set; } = null!;
@@ -70,6 +73,9 @@ namespace PeakShock
             EnablePoisonShock = CFG.Bind("ShockTypes", "EnablePoisonShock", false, "Enable shock for Poison damage");
             EnableColdShock = CFG.Bind("ShockTypes", "EnableColdShock", false, "Enable shock for Cold damage");
             EnableHotShock = CFG.Bind("ShockTypes", "EnableHotShock", false, "Enable shock for Hot/Fire damage");
+            EnableSporesShock = CFG.Bind("ShockTypes", "EnableSporesShock", false, "Enable shock for Spores damage");
+            EnableWebShock = CFG.Bind("ShockTypes", "EnableWebShock", false, "Enable shock for Web/Spider damage");
+            EnableThornsShock = CFG.Bind("ShockTypes", "EnableThornsShock", false, "Enable shock for Thorns damage");
             ShockCooldownSeconds = CFG.Bind("Shock", "ShockCooldownSeconds", 2f, "Minimum seconds between shocks (prevents shock spam)");
             ShockProviderType = CFG.Bind("Shock", "Provider", ShockProvider.PiShock, "Choose PiShock or OpenShock");
             OpenShockApiUrl = CFG.Bind("OpenShock", "ApiUrl", "https://api.openshock.app", "OpenShock API URL");
@@ -124,7 +130,10 @@ namespace PeakShock
                 { CharacterAfflictions.STATUSTYPE.Injury, Plugin.EnableInjuryShock.Value },
                 { CharacterAfflictions.STATUSTYPE.Poison, Plugin.EnablePoisonShock.Value },
                 { CharacterAfflictions.STATUSTYPE.Cold, Plugin.EnableColdShock.Value },
-                { CharacterAfflictions.STATUSTYPE.Hot, Plugin.EnableHotShock.Value }
+                { CharacterAfflictions.STATUSTYPE.Hot, Plugin.EnableHotShock.Value },
+                { CharacterAfflictions.STATUSTYPE.Spores, Plugin.EnableSporesShock.Value },
+                { CharacterAfflictions.STATUSTYPE.Web, Plugin.EnableWebShock.Value },
+                { CharacterAfflictions.STATUSTYPE.Thorns, Plugin.EnableThornsShock.Value }
             };
 
             [HarmonyPostfix]
