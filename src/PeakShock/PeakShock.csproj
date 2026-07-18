@@ -4,6 +4,7 @@
     <!-- This is the most appropriate target framework for the game's Unity version. -->
     <TargetFramework>netstandard2.1</TargetFramework>
     <!-- This is the GUID of your mod. Example: com.github.PEAKModding.BepInExTemplate -->
+    <LangVersion>10.0</LangVersion>
     <AssemblyName>addzeey.PeakShock</AssemblyName>
     <!-- This is the display name of your mod. Example: BepInEx Template -->
     <AssemblyTitle>PeakShock</AssemblyTitle>
@@ -13,23 +14,37 @@
 
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath
+    Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\Assembly-CSharp.dll')">C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath
+    Condition="Exists('$(HOME)/.local/share/Steam/steamapps/common/PEAK/PEAK_Data/Managed/Assembly-CSharp.dll')">$(HOME)/.local/share/Steam/steamapps/common/PEAK/PEAK_Data/Managed/Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath
+    Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\UnityEngine.CoreModule.dll')">C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath
+    Condition="Exists('$(HOME)/.local/share/Steam/steamapps/common/PEAK/PEAK_Data/Managed/UnityEngine.CoreModule.dll')">$(HOME)/.local/share/Steam/steamapps/common/PEAK/PEAK_Data/Managed/UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath
+    Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\UnityEngine.dll')">C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath
+    Condition="Exists('$(HOME)/.local/share/Steam/steamapps/common/PEAK/PEAK_Data/Managed/UnityEngine.dll')">$(HOME)/.local/share/Steam/steamapps/common/PEAK/PEAK_Data/Managed/UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="PhotonUnityNetworking">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\PhotonUnityNetworking.dll</HintPath>
+      <HintPath
+    Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\PhotonUnityNetworking.dll')">C:\Program Files (x86)\Steam\steamapps\common\PEAK\PEAK_Data\Managed\PhotonUnityNetworking.dll</HintPath>
+      <HintPath
+    Condition="Exists('$(HOME)/.local/share/Steam/steamapps/common/PEAK/PEAK_Data/Managed/PhotonUnityNetworking.dll')">$(HOME)/.local/share/Steam/steamapps/common/PEAK/PEAK_Data/Managed/PhotonUnityNetworking.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.37" />
-    <PackageReference Include="System.Text.Json" Version="9.0.6" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" />  
+    <PackageReference Include="Hamunii.BepInEx.AutoPlugin" Version="1.*" />  
+    <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.37" />  
+    <PackageReference Include="System.Text.Json" Version="9.0.6" />  
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />  
   </ItemGroup>
 
   <!--
