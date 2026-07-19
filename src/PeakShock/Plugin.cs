@@ -39,6 +39,7 @@ namespace PeakShock
         internal static ConfigEntry<bool> EnableSporesShock { get; private set; } = null!;
         internal static ConfigEntry<bool> EnableWebShock { get; private set; } = null!;
         internal static ConfigEntry<bool> EnableThornsShock { get; private set; } = null!;
+        internal static ConfigEntry<bool> ShockWhilePassedOut { get; private set; } = null!;
         internal static ConfigEntry<float> ShockCooldownSeconds { get; private set; } = null!;
         public enum ShockProvider { PiShock, OpenShock }
         internal static ConfigEntry<ShockProvider> ShockProviderType { get; private set; } = null!;
@@ -76,13 +77,14 @@ namespace PeakShock
             EnableSporesShock = CFG.Bind("ShockTypes", "EnableSporesShock", false, "Enable shock for Spores damage");
             EnableWebShock = CFG.Bind("ShockTypes", "EnableWebShock", false, "Enable shock for Web/Spider damage");
             EnableThornsShock = CFG.Bind("ShockTypes", "EnableThornsShock", false, "Enable shock for Thorns damage");
+            ShockWhilePassedOut = CFG.Bind("Shock", "ShockWhilePassedOut", false, "Enable being able to be shocked while passed out");
             ShockCooldownSeconds = CFG.Bind("Shock", "ShockCooldownSeconds", 2f, "Minimum seconds between shocks (prevents shock spam)");
             ShockProviderType = CFG.Bind("Shock", "Provider", ShockProvider.PiShock, "Choose PiShock or OpenShock");
             OpenShockApiUrl = CFG.Bind("OpenShock", "ApiUrl", "https://api.openshock.app", "OpenShock API URL");
             OpenShockDeviceId = CFG.Bind("OpenShock", "DeviceId", "", "OpenShock Device ID");
             OpenShockApiKey = CFG.Bind("OpenShock", "ApiKey", "", "OpenShock API Key");
 
-            Log.LogInfo($"[PeakShock] Config:\nMinShock={MinShock.Value}\nMaxShock={MaxShock.Value}\nDeathShock={DeathShock.Value}\nDeathDuration={DeathDuration.Value}\nEnableInjuryShock={EnableInjuryShock.Value}\nEnablePoisonShock={EnablePoisonShock.Value}\nEnableColdShock={EnableColdShock.Value}\nEnableHotShock={EnableHotShock.Value}\nShockCooldownSeconds={ShockCooldownSeconds.Value}");
+            Log.LogInfo($"[PeakShock] Config:\nMinShock={MinShock.Value}\nMaxShock={MaxShock.Value}\nDeathShock={DeathShock.Value}\nDeathDuration={DeathDuration.Value}\nEnableInjuryShock={EnableInjuryShock.Value}\nEnablePoisonShock={EnablePoisonShock.Value}\nEnableColdShock={EnableColdShock.Value}\nEnableHotShock={EnableHotShock.Value}\nEnableSporesShock={EnableSporesShock.Value}\nEnableWebShock={EnableWebShock.Value}\nEnableThornsShock={EnableThornsShock.Value}\nShockCooldownSeconds={ShockCooldownSeconds.Value}");
 
             if (ShockProviderType.Value == ShockProvider.PiShock)
             {
@@ -135,6 +137,8 @@ namespace PeakShock
                 { CharacterAfflictions.STATUSTYPE.Web, Plugin.EnableWebShock.Value },
                 { CharacterAfflictions.STATUSTYPE.Thorns, Plugin.EnableThornsShock.Value }
             };
+            private static float damageReceivedBelowThreshold = 0f;
+            private static int thornsDamageReceived = 0;
 
             [HarmonyPostfix]
             public static void Postfix(CharacterAfflictions __instance, CharacterAfflictions.STATUSTYPE statusType, float amount, bool fromRPC)
@@ -144,27 +148,28 @@ namespace PeakShock
                     return;
                 if (amount <= 0f) return;
                 // Ignore all status effect shocks if the player is dead or passed out
-                if (__instance.character.data.dead || __instance.character.data.fullyPassedOut || __instance.character.data.passedOut)
+                if (__instance.character.data.dead || __instance.character.data.fullyPassedOut && !Plugin.ShockWhilePassedOut.Value || __instance.character.data.passedOut && !Plugin.ShockWhilePassedOut.Value)
                 {
                     Plugin.Log.LogInfo($"[PeakShock] Ignored status effect shock ({statusType}) because player is dead or passed out.");
                     return;
                 }
                 int minShock = Plugin.MinShock.Value;
                 int maxShock = Plugin.MaxShock.Value;
+                int thornsAmount = __instance.GetTotalThornStatusIncrements() - thornsDamageReceived;
+                if (thornsAmount > 0)
+                {
+                    if (Plugin.EnableThornsShock.Value)
+                    {
+                        int intensity = Mathf.Clamp(Mathf.RoundToInt(thornsAmount * maxShock / 100), minShock, maxShock);
+                        Plugin.Log.LogInfo($"[PeakShock] Status effect Thorns damage: {thornsAmount / 100}, shock: {intensity}%");
+                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1));
+                    }   
+                }
+                thornsDamageReceived = __instance.GetTotalThornStatusIncrements();
                 const float damageThreshold = 0.01f;
-                float damageReceivedBelowThreshold = 0f;
                 if (amount < damageThreshold)
                 {
-                    // Accumulate small amounts of damage to trigger shock later
-                    damageReceivedBelowThreshold += amount;
-                    if (damageReceivedBelowThreshold > damageThreshold)
-                    {
-                        Plugin.Log.LogInfo($"[PeakShock] Accumulated damage {damageReceivedBelowThreshold} exceeds threshold, triggering shock.");
-                        int intensity = Mathf.Clamp(Mathf.RoundToInt(damageReceivedBelowThreshold * maxShock), minShock, maxShock);
-                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1));
-                        damageReceivedBelowThreshold = 0f; // Reset after triggering shock
-                    }
-                    return; // Ignore small amounts of damage
+                    return; // Ignore small amounts of damag
                 }
                 else
                 {
