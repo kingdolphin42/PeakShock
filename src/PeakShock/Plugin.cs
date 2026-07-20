@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System;
 
 namespace PeakShock
 {
@@ -77,9 +78,9 @@ namespace PeakShock
             EnableSporesShock = CFG.Bind("ShockTypes", "EnableSporesShock", false, "Enable shock for Spores damage");
             EnableWebShock = CFG.Bind("ShockTypes", "EnableWebShock", false, "Enable shock for Web/Spider damage");
             EnableThornsShock = CFG.Bind("ShockTypes", "EnableThornsShock", false, "Enable shock for Thorns damage");
-            ShockWhilePassedOut = CFG.Bind("Shock", "ShockWhilePassedOut", false, "Enable being able to be shocked while passed out");
             ShockCooldownSeconds = CFG.Bind("Shock", "ShockCooldownSeconds", 2f, "Minimum seconds between shocks (prevents shock spam)");
             ShockProviderType = CFG.Bind("Shock", "Provider", ShockProvider.PiShock, "Choose PiShock or OpenShock");
+            ShockWhilePassedOut = CFG.Bind("Shock", "ShockWhilePassedOut", false, "Enable being able to be shocked while passed out");
             OpenShockApiUrl = CFG.Bind("OpenShock", "ApiUrl", "https://api.openshock.app", "OpenShock API URL");
             OpenShockDeviceId = CFG.Bind("OpenShock", "DeviceId", "", "OpenShock Device ID");
             OpenShockApiKey = CFG.Bind("OpenShock", "ApiKey", "", "OpenShock API Key");
@@ -135,9 +136,19 @@ namespace PeakShock
                 { CharacterAfflictions.STATUSTYPE.Hot, Plugin.EnableHotShock.Value },
                 { CharacterAfflictions.STATUSTYPE.Spores, Plugin.EnableSporesShock.Value },
                 { CharacterAfflictions.STATUSTYPE.Web, Plugin.EnableWebShock.Value },
-                { CharacterAfflictions.STATUSTYPE.Thorns, Plugin.EnableThornsShock.Value }
+                { CharacterAfflictions.STATUSTYPE.Thorns, Plugin.EnableThornsShock.Value },
             };
-            private static float damageReceivedBelowThreshold = 0f;
+            // Dictionary for amounts of specific damage received below the threshold amount
+            private static Dictionary<CharacterAfflictions.STATUSTYPE, float> damageReceivedBelowThreshold = new Dictionary<CharacterAfflictions.STATUSTYPE, float>
+            {
+                { CharacterAfflictions.STATUSTYPE.Injury, 0f },
+                { CharacterAfflictions.STATUSTYPE.Poison, 0f },
+                { CharacterAfflictions.STATUSTYPE.Cold, 0f },
+                { CharacterAfflictions.STATUSTYPE.Hot, 0f },
+                { CharacterAfflictions.STATUSTYPE.Spores, 0f },
+                { CharacterAfflictions.STATUSTYPE.Web, 0f},
+            };
+            // A count for the amount of thorns damage received
             private static int thornsDamageReceived = 0;
 
             [HarmonyPostfix]
@@ -156,33 +167,46 @@ namespace PeakShock
                 int minShock = Plugin.MinShock.Value;
                 int maxShock = Plugin.MaxShock.Value;
                 int thornsAmount = __instance.GetTotalThornStatusIncrements() - thornsDamageReceived;
+                // Thorns Damage
                 if (thornsAmount > 0)
                 {
-                    if (Plugin.EnableThornsShock.Value)
+
+                    if (ShockTypeEnabled[CharacterAfflictions.STATUSTYPE.Thorns])
                     {
-                        int intensity = Mathf.Clamp(Mathf.RoundToInt(thornsAmount * maxShock / 100), minShock, maxShock);
-                        Plugin.Log.LogInfo($"[PeakShock] Status effect Thorns damage: {thornsAmount / 100}, shock: {intensity}%");
+                        float thornsAmountProportion = thornsAmount / 100;
+                        int intensity = Mathf.Clamp(Mathf.RoundToInt(thornsAmountProportion * maxShock), minShock, maxShock);
+                        Plugin.Log.LogInfo($"[PeakShock] Status effect Thorns damage: {thornsAmountProportion}, shock: {intensity}%");
                         Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1));
                     }   
                 }
                 thornsDamageReceived = __instance.GetTotalThornStatusIncrements();
-                const float damageThreshold = 0.01f;
-                if (amount < damageThreshold)
+                if (CharacterAfflictions.STATUSTYPE.Hunger == statusType) return; // ignore hunger status effects
+                if (!ShockTypeEnabled.TryGetValue(statusType, out bool isEnabled) || !isEnabled)
                 {
-                    return; // Ignore small amounts of damag
+                    Plugin.Log.LogInfo($"[PeakShock] Ignored status effect shock for {statusType} because it is disabled.");
+                    return; // Ignore status effects that are not enabled
                 }
                 else
                 {
-
-                    if (CharacterAfflictions.STATUSTYPE.Hunger == statusType) return; // ignore hunger status effects
-                    if (!ShockTypeEnabled.TryGetValue(statusType, out bool isEnabled) || !isEnabled)
+                    const float damageThreshold = 0.03f;
+                    damageReceivedBelowThreshold[statusType] += amount - Mathf.FloorToInt(amount);
+                    if (damageReceivedBelowThreshold[statusType] >= damageThreshold)
                     {
-                        Plugin.Log.LogInfo($"[PeakShock] Ignored status effect shock for {statusType} because it is disabled.");
-                        return; // Ignore status effects that are not enabled
+                        float floorReceived = Mathf.FloorToInt(damageReceivedBelowThreshold[statusType] * 100);
+                        damageReceivedBelowThreshold[statusType] = damageReceivedBelowThreshold[statusType] - floorReceived / 100;
+                        int intensity = Mathf.Clamp(Mathf.RoundToInt(floorReceived / 100 * maxShock), minShock, maxShock);
+                        Plugin.Log.LogInfo($"[PeakShock] Accumulated damage: {floorReceived / 100}, shock: {intensity}%");
+                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1));
+                        // Changes amount if amount recieved below threshold is more than the threshold itself
                     }
                     else
                     {
-                        int intensity = Mathf.Clamp(Mathf.RoundToInt(amount * maxShock), minShock, maxShock);
+                        if (amount < damageThreshold)
+                        {
+                            return;
+                            // Catches if amount is too small
+                        }
+                        int intensity = Mathf.Clamp(Mathf.RoundToInt(amount * maxShock / 100), minShock, maxShock);
                         Plugin.Log.LogInfo($"[PeakShock] Status effect {statusType} damage: {amount}, shock: {intensity}%");
                         Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1));
                     }

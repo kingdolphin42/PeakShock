@@ -40,13 +40,18 @@ When you first run the game with PeakShock installed, a config file named `addze
   - `MaxShock`: Maximum shock intensity (1-100).
   - `DeathShock`: Shock intensity on death (1-100).
   - `DeathDuration`: Shock duration on death (seconds).
-  - `ShockCooldownSeconds`: Minimum seconds between shocks (prevents shock spam).
+  - `ShockCooldownSeconds`: Minimum seconds between shocks (Prevents shock spam).
+  - `ShockWhilePassedOut`: Enable shock while passed out.
+  (prevents shock spam).
 
 - **Shock Triggers**
   - `EnableInjuryShock`: Enable shock for Injury damage.
   - `EnablePoisonShock`: Enable shock for Poison damage.
   - `EnableColdShock`: Enable shock for Cold damage.
   - `EnableHotShock`: Enable shock for Hot/Fire damage.
+  - `EnableSporesShock`: Enable shock for Spores damage.
+  - `EnableWebShock`: Enable shock for Web/Spider damage.
+  - `EnableThornsShock`: Enable shock for Thorns damage
 
 You can edit this file manually with a text editor, or use your mod manager's config editor if available. Always save your changes before restarting the game.
 
