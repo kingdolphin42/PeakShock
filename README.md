@@ -42,7 +42,6 @@ When you first run the game with PeakShock installed, a config file named `addze
   - `DeathDuration`: Shock duration on death (seconds).
   - `ShockCooldownSeconds`: Minimum seconds between shocks (Prevents shock spam).
   - `ShockWhilePassedOut`: Enable shock while passed out.
-  (prevents shock spam).
 
 - **Shock Triggers**
   - `EnableInjuryShock`: Enable shock for Injury damage.
