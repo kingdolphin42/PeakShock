@@ -117,7 +117,7 @@ namespace PeakShock
                     int intensity = Plugin.DeathShock.Value;
                     int duration = Plugin.DeathDuration.Value;
                     Plugin.Log.LogInfo($"[PeakShock] Player died. Triggering death shock: {intensity}% for {duration}s");
-                    Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, duration));
+                    Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, duration, true));
                 }
             }
         }
@@ -176,7 +176,7 @@ namespace PeakShock
                         float thornsAmountProportion = thornsAmount / 100;
                         int intensity = Mathf.Clamp(Mathf.RoundToInt(thornsAmountProportion * maxShock), minShock, maxShock);
                         Plugin.Log.LogInfo($"[PeakShock] Status effect Thorns damage: {thornsAmountProportion}, shock: {intensity}%");
-                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1));
+                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1, false));
                     }   
                 }
                 thornsDamageReceived = __instance.GetTotalThornStatusIncrements();
@@ -196,7 +196,7 @@ namespace PeakShock
                         damageReceivedBelowThreshold[statusType] = damageReceivedBelowThreshold[statusType] - floorReceived / 100;
                         int intensity = Mathf.Clamp(Mathf.RoundToInt(floorReceived / 100 * maxShock), minShock, maxShock);
                         Plugin.Log.LogInfo($"[PeakShock] Accumulated damage: {floorReceived / 100}, shock: {intensity}%");
-                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1));
+                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1, false));
                         // Changes amount if amount recieved below threshold is more than the threshold itself
                     }
                     else
@@ -208,7 +208,7 @@ namespace PeakShock
                         }
                         int intensity = Mathf.Clamp(Mathf.RoundToInt(amount * maxShock / 100), minShock, maxShock);
                         Plugin.Log.LogInfo($"[PeakShock] Status effect {statusType} damage: {amount}, shock: {intensity}%");
-                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1));
+                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1, false));
                     }
                 }
             }

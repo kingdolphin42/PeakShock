@@ -13,11 +13,12 @@ namespace PeakShock
 
         private DateTime _lastShockTime = DateTime.MinValue;
         private TimeSpan ShockCooldown => TimeSpan.FromSeconds(1 + Math.Max(0, Plugin.ShockCooldownSeconds.Value)); // forced 1s minimum, plus user config
+        private TimeSpan DeathShockCooldown => TimeSpan.FromSeconds(1 + Math.Max(0, 10)); // Cooldown for deathshock is set really large as a failsafe
 
-        public void TriggerShock(int intensity, int duration = 1, string? shareCode = null)
+        public void TriggerShock(int intensity, int duration = 1, bool death = false, string? shareCode = null)
         {
             var now = DateTime.UtcNow;
-            if (now - _lastShockTime < ShockCooldown)
+            if (now - _lastShockTime < ShockCooldown && !death || now - _lastShockTime < DeathShockCooldown && death)
             {
                 Plugin.Log.LogInfo($"[PeakShock] Shock skipped due to cooldown.");
                 return;
@@ -28,9 +29,9 @@ namespace PeakShock
             _queue.Enqueue(() => TriggerShockInternal(intensity, duration, code));
         }
 
-        public void EnqueueShock(int intensity, int duration, string? code = null)
+        public void EnqueueShock(int intensity, int duration, bool death, string? code = null)
         {
-            TriggerShock(intensity, duration, code);
+            TriggerShock(intensity, duration, death, code);
         }
 
         private async Task TriggerShockInternal(int intensity, int duration, string code)

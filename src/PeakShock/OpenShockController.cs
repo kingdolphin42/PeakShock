@@ -17,6 +17,7 @@ public class OpenShockController : IShockController
     private DateTime _lastShockTime = DateTime.MinValue;
 
     private TimeSpan ShockCooldown => TimeSpan.FromSeconds(1.0 + Math.Max(0.0f, Plugin.ShockCooldownSeconds.Value));
+    private TimeSpan DeathShockCooldown => TimeSpan.FromSeconds(1 + Math.Max(0, 10)); // Cooldown for deathshock is set really large as a failsafe
 
     public OpenShockController()
     {
@@ -25,10 +26,10 @@ public class OpenShockController : IShockController
         _apiKey = Plugin.OpenShockApiKey.Value;
     }
 
-    public void EnqueueShock(int intensity, int duration, string? code = null)
+    public void EnqueueShock(int intensity, int duration, bool death = false, string? code = null)
     {
         var utcNow = DateTime.UtcNow;
-        if (utcNow - _lastShockTime < ShockCooldown)
+        if (utcNow - _lastShockTime < ShockCooldown && !death || utcNow - _lastShockTime < DeathShockCooldown && death)
         {
             Plugin.Log.LogInfo("[PeakShock] OpenShock shock skipped due to cooldown.");
             return;
