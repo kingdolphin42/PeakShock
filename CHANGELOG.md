@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5.1] - 2026-07-22
+### Added
+- Added support to build in Linux.
+- Added Spore, Web and Thorns damage types.
+- Fixed Accumulative Damage.
+- Added new config for damage while passed out.
+
 ## [0.1.5] - 2025-07-04
 ### Added
 - Fixed ghost shocks when lobby is using a mod that ups player limit and other players can share the players name.

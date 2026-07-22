@@ -22,7 +22,7 @@ namespace PeakShock
     [BepInAutoPlugin]
     public partial class Plugin : BaseUnityPlugin
     {
-        public const string PluginVersion = "0.1.5";
+        public const string PluginVersion = "0.1.5.1";
         internal static ManualLogSource Log { get; private set; } = null!;
         internal static ConfigFile CFG { get; private set; } = null!;
         internal static PiShockController PiShockController { get; private set; } = null!;
