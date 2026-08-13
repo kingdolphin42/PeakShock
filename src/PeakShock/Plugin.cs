@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
-
+using Mono.Cecil;
 namespace PeakShock
 {
     // Here are some basic resources on code style and naming conventions to help
@@ -40,6 +40,9 @@ namespace PeakShock
         internal static ConfigEntry<bool> EnableSporesShock { get; private set; } = null!;
         internal static ConfigEntry<bool> EnableWebShock { get; private set; } = null!;
         internal static ConfigEntry<bool> EnableThornsShock { get; private set; } = null!;
+        internal static ConfigEntry<bool> EnableArrowShock { get; private set; } = null!;
+        internal static ConfigEntry<bool> EnableFlyTrapShock { get; private set; } = null!;
+        internal static ConfigEntry<bool> EnablePetrifyShock { get; private set; } = null!;
         internal static ConfigEntry<bool> ShockWhilePassedOut { get; private set; } = null!;
         internal static ConfigEntry<float> ShockCooldownSeconds { get; private set; } = null!;
         public enum ShockProvider { PiShock, OpenShock }
@@ -78,6 +81,9 @@ namespace PeakShock
             EnableSporesShock = CFG.Bind("ShockTypes", "EnableSporesShock", false, "Enable shock for Spores damage");
             EnableWebShock = CFG.Bind("ShockTypes", "EnableWebShock", false, "Enable shock for Web/Spider damage");
             EnableThornsShock = CFG.Bind("ShockTypes", "EnableThornsShock", false, "Enable shock for Thorns damage");
+            EnableArrowShock = CFG.Bind("ShockTypes", "EnableArrowShock", false, "Enable shock for Arrow damage");
+            EnableFlyTrapShock = CFG.Bind("ShockTypes", "EnableFlyTrapShock", false, "Enable shock for Fly Trap damage");
+            EnablePetrifyShock = CFG.Bind("ShockTypes", "EnablePetrifyShock", false, "Enable shock for Petrify damage");
             ShockCooldownSeconds = CFG.Bind("Shock", "ShockCooldownSeconds", 2f, "Minimum seconds between shocks (prevents shock spam)");
             ShockProviderType = CFG.Bind("Shock", "Provider", ShockProvider.PiShock, "Choose PiShock or OpenShock");
             ShockWhilePassedOut = CFG.Bind("Shock", "ShockWhilePassedOut", false, "Enable being able to be shocked while passed out");
@@ -85,7 +91,7 @@ namespace PeakShock
             OpenShockDeviceId = CFG.Bind("OpenShock", "DeviceId", "", "OpenShock Device ID");
             OpenShockApiKey = CFG.Bind("OpenShock", "ApiKey", "", "OpenShock API Key");
 
-            Log.LogInfo($"[PeakShock] Config:\nMinShock={MinShock.Value}\nMaxShock={MaxShock.Value}\nDeathShock={DeathShock.Value}\nDeathDuration={DeathDuration.Value}\nEnableInjuryShock={EnableInjuryShock.Value}\nEnablePoisonShock={EnablePoisonShock.Value}\nEnableColdShock={EnableColdShock.Value}\nEnableHotShock={EnableHotShock.Value}\nEnableSporesShock={EnableSporesShock.Value}\nEnableWebShock={EnableWebShock.Value}\nEnableThornsShock={EnableThornsShock.Value}\nShockCooldownSeconds={ShockCooldownSeconds.Value}");
+            Log.LogInfo($"[PeakShock] Config:\nMinShock={MinShock.Value}\nMaxShock={MaxShock.Value}\nDeathShock={DeathShock.Value}\nDeathDuration={DeathDuration.Value}\nEnableInjuryShock={EnableInjuryShock.Value}\nEnablePoisonShock={EnablePoisonShock.Value}\nEnableColdShock={EnableColdShock.Value}\nEnableHotShock={EnableHotShock.Value}\nEnableSporesShock={EnableSporesShock.Value}\nEnableWebShock={EnableWebShock.Value}\nEnableThornsShock={EnableThornsShock.Value}\nEnableArrowShock={EnableArrowShock.Value}\nEnableFlyTrapShock={EnableFlyTrapShock.Value}\nEnablePetrifyShock={EnablePetrifyShock.Value}\nShockCooldownSeconds={ShockCooldownSeconds.Value}");
 
             if (ShockProviderType.Value == ShockProvider.PiShock)
             {
@@ -125,7 +131,6 @@ namespace PeakShock
         [HarmonyPatch(typeof(CharacterAfflictions), nameof(CharacterAfflictions.AddStatus))]
         public class CharacterAfflictions_AddStatus_Patch
         {
-
             // Affliction Type Enabled Dicitonary
             private static readonly Dictionary<CharacterAfflictions.STATUSTYPE, bool> ShockTypeEnabled = new Dictionary<CharacterAfflictions.STATUSTYPE, bool>
             {
@@ -137,6 +142,9 @@ namespace PeakShock
                 { CharacterAfflictions.STATUSTYPE.Spores, Plugin.EnableSporesShock.Value },
                 { CharacterAfflictions.STATUSTYPE.Web, Plugin.EnableWebShock.Value },
                 { CharacterAfflictions.STATUSTYPE.Thorns, Plugin.EnableThornsShock.Value },
+                { CharacterAfflictions.STATUSTYPE.Arrow, Plugin.EnableArrowShock.Value },
+                { CharacterAfflictions.STATUSTYPE.FlyTrap, Plugin.EnableWebShock.Value },
+                { CharacterAfflictions.STATUSTYPE.Petrify, Plugin.EnableWebShock.Value },
             };
             // Dictionary for amounts of specific damage received below the threshold amount
             private static Dictionary<CharacterAfflictions.STATUSTYPE, float> damageReceivedBelowThreshold = new Dictionary<CharacterAfflictions.STATUSTYPE, float>
@@ -147,9 +155,12 @@ namespace PeakShock
                 { CharacterAfflictions.STATUSTYPE.Hot, 0f },
                 { CharacterAfflictions.STATUSTYPE.Spores, 0f },
                 { CharacterAfflictions.STATUSTYPE.Web, 0f},
+                { CharacterAfflictions.STATUSTYPE.FlyTrap, 0f },
+                { CharacterAfflictions.STATUSTYPE.Petrify, 0f },
             };
             // A count for the amount of thorns damage received
             private static int thornsDamageReceived = 0;
+            private static int arrowDamageReceived = 0;
 
             [HarmonyPostfix]
             public static void Postfix(CharacterAfflictions __instance, CharacterAfflictions.STATUSTYPE statusType, float amount, bool fromRPC)
@@ -166,20 +177,18 @@ namespace PeakShock
                 }
                 int minShock = Plugin.MinShock.Value;
                 int maxShock = Plugin.MaxShock.Value;
-                int thornsAmount = __instance.GetTotalThornStatusIncrements() - thornsDamageReceived;
-                // Thorns Damage
-                if (thornsAmount > 0)
+                // Thorns and Arrow Damage Handling
+                __instance.GetTotalThornStatusIncrements(out int thornsAmount, out int arrowAmount);
+                thornsAmount -= thornsDamageReceived;
+                thornsAmount = arrowAmount > arrowDamageReceived ? 0 : arrowAmount - arrowDamageReceived;
+                if ((thornsAmount > 0 && Plugin.EnableThornsShock.Value) || (arrowAmount > arrowDamageReceived && Plugin.EnableArrowShock.Value))
                 {
-
-                    if (ShockTypeEnabled[CharacterAfflictions.STATUSTYPE.Thorns])
-                    {
-                        float thornsAmountProportion = thornsAmount / 100;
-                        int intensity = Mathf.Clamp(Mathf.RoundToInt(thornsAmountProportion * maxShock), minShock, maxShock);
-                        Plugin.Log.LogInfo($"[PeakShock] Status effect Thorns damage: {thornsAmountProportion}, shock: {intensity}%");
-                        Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1, false));
-                    }   
-                }
-                thornsDamageReceived = __instance.GetTotalThornStatusIncrements();
+                    float thornsAmountProportion = thornsAmount / 100;
+                    int intensity = Mathf.Clamp(Mathf.RoundToInt(thornsAmountProportion * maxShock), minShock, maxShock);
+                    Plugin.Log.LogInfo($"[PeakShock] Status effect Thorns damage: {thornsAmountProportion}, shock: {intensity}%");
+                    Task.Run(() => Plugin.ShockController.EnqueueShock(intensity, 1, false));
+                    __instance.GetTotalThornStatusIncrements(out thornsDamageReceived, out arrowDamageReceived);
+                }  
                 if (CharacterAfflictions.STATUSTYPE.Hunger == statusType) return; // ignore hunger status effects
                 if (!ShockTypeEnabled.TryGetValue(statusType, out bool isEnabled) || !isEnabled)
                 {
