@@ -50,7 +50,10 @@ When you first run the game with PeakShock installed, a config file named `addze
   - `EnableHotShock`: Enable shock for Hot/Fire damage.
   - `EnableSporesShock`: Enable shock for Spores damage.
   - `EnableWebShock`: Enable shock for Web/Spider damage.
-  - `EnableThornsShock`: Enable shock for Thorns damage
+  - `EnableThornsShock`: Enable shock for Thorns damage.
+  - `EnableArrowShock`: Enable shock for Arrow damage.
+  - `EnablePetrifyShock`: Enable shock for Petrify damage.
+  - `EnableFlyTrapShock`: Enable shock for Fly Trap damage.
 
 You can edit this file manually with a text editor, or use your mod manager's config editor if available. Always save your changes before restarting the game.
 

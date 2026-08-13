@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.5.2] - 2026-08-13
+### Added
+- Added in Arrow, Petrify and Fly Trap damage types
+
 ## [0.1.5.1] - 2026-07-22
 ### Added
 - Added support to build in Linux.
